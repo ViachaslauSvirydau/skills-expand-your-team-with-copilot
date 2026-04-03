@@ -569,6 +569,27 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-section">
+        <span class="share-label">Share:</span>
+        <div class="share-buttons">
+          <button class="share-btn share-native tooltip" aria-label="Share this activity" title="Share">
+            📤
+            <span class="tooltip-text">Share this activity</span>
+          </button>
+          <button class="share-btn share-twitter tooltip" aria-label="Share on X (Twitter)" title="Share on X">
+            𝕏
+            <span class="tooltip-text">Share on X (Twitter)</span>
+          </button>
+          <button class="share-btn share-whatsapp tooltip" aria-label="Share on WhatsApp" title="Share on WhatsApp">
+            💬
+            <span class="tooltip-text">Share on WhatsApp</span>
+          </button>
+          <button class="share-btn share-copy tooltip" aria-label="Copy link" title="Copy link">
+            🔗
+            <span class="tooltip-text">Copy link</span>
+          </button>
+        </div>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -587,7 +608,103 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // Add click handlers for share buttons
+    activityCard.querySelector(".share-native").addEventListener("click", () => shareActivity(name, details));
+    activityCard.querySelector(".share-twitter").addEventListener("click", () => shareOnTwitter(name, details));
+    activityCard.querySelector(".share-whatsapp").addEventListener("click", () => shareOnWhatsApp(name, details));
+    activityCard.querySelector(".share-copy").addEventListener("click", (e) => copyActivityLink(name, details, e.currentTarget));
+
     activitiesList.appendChild(activityCard);
+  }
+
+  // Build a shareable text snippet for an activity
+  function buildShareText(name, details) {
+    const schedule = formatSchedule(details);
+    const participants = details.participants || [];
+    const spotsLeft = details.max_participants - participants.length;
+    return `Check out "${name}" at Mergington High School! ${details.description} Schedule: ${schedule}. ${spotsLeft} spot${spotsLeft !== 1 ? "s" : ""} left!`;
+  }
+
+  // Share using the Web Share API (mobile/supported browsers)
+  async function shareActivity(name, details) {
+    const text = buildShareText(name, details);
+    const url = window.location.href;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: name, text, url });
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Share failed:", err);
+        }
+      }
+    } else {
+      // Fallback: copy the share text to clipboard
+      const success = await copyToClipboard(`${text}\n${url}`);
+      if (success) {
+        showMessage("Link copied to clipboard!", "success");
+      } else {
+        showMessage("Failed to copy link. Please try again.", "error");
+      }
+    }
+  }
+
+  // Share on X (Twitter)
+  function shareOnTwitter(name, details) {
+    const text = buildShareText(name, details);
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  // Share on WhatsApp
+  function shareOnWhatsApp(name, details) {
+    const text = buildShareText(name, details);
+    const message = `${text}\n${window.location.href}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  // Copy activity link / text to clipboard
+  async function copyActivityLink(name, details, button) {
+    const text = buildShareText(name, details);
+    const message = `${text}\n${window.location.href}`;
+    const success = await copyToClipboard(message);
+
+    if (success) {
+      // Brief visual + accessible feedback on the button
+      const originalText = button.textContent;
+      const originalAriaLabel = button.getAttribute("aria-label");
+      button.textContent = "✅";
+      button.setAttribute("aria-label", "Copied!");
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.setAttribute("aria-label", originalAriaLabel);
+      }, 1500);
+    } else {
+      showMessage("Failed to copy link. Please try again.", "error");
+    }
+  }
+
+  // Helper: copy text to clipboard; returns true on success, false on failure
+  async function copyToClipboard(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      return true;
+    } catch (err) {
+      console.error("Copy to clipboard failed:", err);
+      return false;
+    }
   }
 
   // Event listeners for search and filter
