@@ -27,27 +27,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Dark mode toggle
   const themeToggle = document.getElementById("theme-toggle");
-  const themeIcon = themeToggle.querySelector(".theme-icon");
 
-  function applyTheme(isDark) {
-    if (isDark) {
-      document.documentElement.setAttribute("data-theme", "dark");
-      themeIcon.textContent = "☀️";
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-      themeIcon.textContent = "🌙";
+  if (themeToggle) {
+    const themeIcon = themeToggle.querySelector(".theme-icon");
+
+    function applyTheme(isDark) {
+      if (isDark) {
+        document.documentElement.setAttribute("data-theme", "dark");
+        themeIcon.textContent = "☀️";
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+        themeIcon.textContent = "🌙";
+      }
     }
+
+    const savedTheme = localStorage.getItem("theme");
+    applyTheme(savedTheme === "dark");
+
+    themeToggle.addEventListener("click", () => {
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      const newIsDark = !isDark;
+      applyTheme(newIsDark);
+      localStorage.setItem("theme", newIsDark ? "dark" : "light");
+    });
   }
-
-  const savedTheme = localStorage.getItem("theme");
-  applyTheme(savedTheme === "dark");
-
-  themeToggle.addEventListener("click", () => {
-    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-    const newIsDark = !isDark;
-    applyTheme(newIsDark);
-    localStorage.setItem("theme", newIsDark ? "dark" : "light");
-  });
 
   // Activity categories with corresponding colors
   const activityTypes = {
